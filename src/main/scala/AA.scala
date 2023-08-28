@@ -5,7 +5,7 @@ import java.awt.Robot
 
 object AA {
 
-  def main(arr: Array[String]): Unit = {
+  def main1(arr: Array[String]): Unit = {
     implicit val robotInstance: RobotInstance   = RobotInstance(new Robot)
     implicit val moveMouseRobot: MoveMouseRobot = new MoveMouseRobotImpl1
     for (_ <- 1 to 10) {

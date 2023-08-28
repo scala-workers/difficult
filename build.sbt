@@ -8,4 +8,6 @@ libraryDependencies ++= libScalax.`cats-effect`.value
 libraryDependencies ++= libScalax.`cats-effect`.value
 libraryDependencies ++= libScalax.`javet`.value
 
+addCommandAlias("r1", "reStart")
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
