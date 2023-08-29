@@ -7,7 +7,7 @@ Compile / compile := ((Compile / compile) dependsOn (Compile / scalafmtSbt)).val
 libraryDependencies ++= libScalax.`cats-effect`.value
 libraryDependencies ++= libScalax.`cats-effect`.value
 libraryDependencies ++= libScalax.`javet`.value
-libraryDependencies ++= Seq("com.melloware"%"jintellitype"%"1.4.1")
+libraryDependencies ++= Seq("com.melloware" % "jintellitype" % "1.4.1")
 
 addCommandAlias("r1", "reStart")
 
