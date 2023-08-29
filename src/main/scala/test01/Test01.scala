@@ -5,6 +5,12 @@ import java.awt.Robot
 import cats.*
 import cats.effect.*
 import com.caoccao.javet.interop.{NodeRuntime, V8Host}
+import com.caoccao.javet.utils.JavetOSUtils
+import com.caoccao.javet.interop.engine.JavetEnginePool
+import com.caoccao.javet.enums.JSRuntimeType
+import com.caoccao.javet.node.modules.NodeModuleModule
+
+import java.io.File
 
 object Test01 extends IOApp.Simple {
 
@@ -17,37 +23,27 @@ object Test01 extends IOApp.Simple {
   def exec(nodeRuntime: NodeRuntime): IO[Unit] = {
     val execString: String =
       """
-        |//引入readline模块
-        |const readline = require('readline');
-        |//创建readline接口实例
-        |let r1 = readline.createInterface({
-        |    input:process.stdin,
-        |    output:process.stdout
-        |});
-        |//使用question方法
-        |r1.question('你想吃什么？',function (anwser){
-        |    console.log(`我想吃${anwser}`);
-        |    //添加close事件，不然不会结束
-        |    r1.close();
-        |});
-        |//close事件监听
-        |r1.on('close',function (){
-        |    //结束程序
-        |    process.exit(0);
-        |});
+        |const ioHook = require('iohook'); ioHook.on("keypress", event => { console.log(event); }); ioHook.start();
         |""".stripMargin
     def execAction: Unit = {
+      println(JavetOSUtils.WORKING_DIRECTORY)
       nodeRuntime.getExecutor(execString).executeVoid()
+      nodeRuntime.await()
     }
     IO.delay(System.out.println("1 + 1 = " + nodeRuntime.getExecutor("1 + 1").executeInteger()))
     IO.delay(execAction)
   }
 
   override val run: IO[Unit] = {
-    val runtimeResource: Resource[IO, NodeRuntime] = for {
+    val runtimeResource = for {
       given V8Host <- v8Instance
       nodeRuntime  <- V8RuntimeBuilder(summon).instance
-    } yield nodeRuntime
+    } yield {
+      val workingDirectory: File = new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp")
+      // Set the require root directory so that Node.js is able to locate node_modules.
+      nodeRuntime.getNodeModule(classOf[NodeModuleModule]).setRequireRootDirectory(workingDirectory)
+      nodeRuntime
+    }
 
     runtimeResource.use(v => exec(v))
   }
