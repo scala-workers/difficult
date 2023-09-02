@@ -10,13 +10,13 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
 
 class GlobalKeyListenerExample extends NativeKeyListener {
   override def nativeKeyPressed(e: NativeKeyEvent): Unit = {
-    System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
+    System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
 
     if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
       try {
         GlobalScreen.unregisterNativeHook();
       } catch {
-        case nativeHookException: NativeHookException => nativeHookException.printStackTrace();
+        case nativeHookException: NativeHookException => nativeHookException.printStackTrace()
       }
     }
   }
