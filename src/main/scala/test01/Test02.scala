@@ -1,16 +1,31 @@
 package test01
 
+import sample.killrweather.fog.*
 import cats.*
 import cats.effect.*
-
 import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.NativeHookException
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
+import fs2._
+
+import scala.concurrent.{Future, Promise}
 
 class GlobalKeyListenerExample extends NativeKeyListener {
+  def gen: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = new WrapIOEvent[Char]
+    with CatchEvent[Char]
+    with IOEventHandle[Char] {
+    override val catchFunc: Promise[Char] = Promise[Char]
+    override val toFuture: Future[Char]   = catchFunc.future
+    override val toIO: IO[Char]           = IO.fromFuture(IO(toFuture))
+
+    override def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = gen
+  }
+
+  var instance: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = gen
+
   override def nativeKeyPressed(e: NativeKeyEvent): Unit = {
-    System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
+    /*System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
 
     if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
       try {
@@ -18,21 +33,32 @@ class GlobalKeyListenerExample extends NativeKeyListener {
       } catch {
         case nativeHookException: NativeHookException => nativeHookException.printStackTrace()
       }
-    }
+    }*/
   }
 
   override def nativeKeyReleased(e: NativeKeyEvent): Unit = {
-    System.out.println("Key Released: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
+    // System.out.println("Key Released: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
   }
 
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
-    System.out.println("Key Typed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
+    this.synchronized {
+      instance.catchFunc.trySuccess(e.getKeyChar())
+      instance = instance.tail
+    }
+    // System.out.println("Key Typed: " + e.getKeyChar())
   }
 }
 
-object Test02 extends IOApp.Simple {
+object Test0211111111111 extends IOApp.Simple {
 
   override val run: IO[Unit] = {
+    val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample()
+    val stream: Stream[IO, Char] = Stream.unfoldEval(listener.instance) { instance =>
+      for (r <- instance.toIO) yield Some(r -> instance.tail)
+    }
+
+    val action = stream.mapAsync(10)(t => IO(println(t)))
+
     IO.delay {
       try {
         GlobalScreen.registerNativeHook()
@@ -44,8 +70,8 @@ object Test02 extends IOApp.Simple {
           System.exit(1)
       }
 
-      GlobalScreen.addNativeKeyListener(new GlobalKeyListenerExample())
-    }.flatTap(_ => IO.never)
+      GlobalScreen.addNativeKeyListener(listener)
+    }.flatTap(_ => action.compile.drain)
   }
 
 }
