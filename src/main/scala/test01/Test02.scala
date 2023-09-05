@@ -47,9 +47,10 @@ class GlobalKeyListenerExample extends NativeKeyListener {
 
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
     this.synchronized {
-      instance.catchFunc.trySuccess(e.getKeyChar())
+      val catchInstance = instance
       instance.tailExtra = gen
       instance = instance.tailExtra
+      catchInstance.catchFunc.trySuccess(e.getKeyChar())
     }
     // System.out.println("Key Typed: " + e.getKeyChar())
   }
