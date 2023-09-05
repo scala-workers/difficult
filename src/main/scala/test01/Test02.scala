@@ -12,17 +12,22 @@ import fs2._
 import scala.concurrent.{Future, Promise}
 
 class GlobalKeyListenerExample extends NativeKeyListener {
-  def gen: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = new WrapIOEvent[Char]
-    with CatchEvent[Char]
-    with IOEventHandle[Char] {
-    override val catchFunc: Promise[Char] = Promise[Char]
-    override val toFuture: Future[Char]   = catchFunc.future
-    override val toIO: IO[Char]           = IO.fromFuture(IO(toFuture))
-
-    override def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = gen
+  trait SetterImpl {
+    def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl      = tailExtra
+    var tailExtra: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = null
   }
 
-  var instance: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] = gen
+  def gen: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = new WrapIOEvent[Char]
+    with CatchEvent[Char]
+    with IOEventHandle[Char]
+    with SetterImpl {
+    override val catchFunc: Promise[Char]                                                               = Promise[Char]
+    override val toFuture: Future[Char]                                                                 = catchFunc.future
+    override val toIO: IO[Char]                                                                         = IO.fromFuture(IO(toFuture))
+    override def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = super.tail
+  }
+
+  var instance: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = gen
 
   override def nativeKeyPressed(e: NativeKeyEvent): Unit = {
     /*System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
@@ -43,7 +48,8 @@ class GlobalKeyListenerExample extends NativeKeyListener {
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
     this.synchronized {
       instance.catchFunc.trySuccess(e.getKeyChar())
-      instance = instance.tail
+      instance.tailExtra = gen
+      instance = instance.tailExtra
     }
     // System.out.println("Key Typed: " + e.getKeyChar())
   }
