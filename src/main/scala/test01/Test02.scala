@@ -1,44 +1,38 @@
 package test01
 
-import sample.killrweather.fog.*
 import cats.*
 import cats.effect.*
 import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.NativeHookException
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
-import fs2._
+import fs2.*
+import org.apache.pekko.actor.typed.ActorSystem
+import sample.killrweather.fog.WeatherStation
 
 import scala.concurrent.{Future, Promise}
 
-class GlobalKeyListenerExample extends NativeKeyListener {
-  trait SetterImpl {
-    def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl      = tailExtra
-    var tailExtra: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = null
-  }
+trait CatchKeybordImpl {
+  def catchFunc: Promise[Char]
+  def toFuture: Future[Char]
+  def toIO: IO[Char]
+  def tail: CatchKeybordImpl
+  var tailExtra: CatchKeybordImpl = null
+}
 
-  def gen: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = new WrapIOEvent[Char]
-    with CatchEvent[Char]
-    with IOEventHandle[Char]
-    with SetterImpl {
-    override val catchFunc: Promise[Char]                                                               = Promise[Char]
-    override val toFuture: Future[Char]                                                                 = catchFunc.future
-    override val toIO: IO[Char]                                                                         = IO.fromFuture(IO(toFuture))
-    override def tail: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = super.tail
+object CatchKeybordImpl {
+  def gen: CatchKeybordImpl = new CatchKeybordImpl {
+    override val catchFunc: Promise[Char] = Promise[Char]
+    override val toFuture: Future[Char]   = catchFunc.future
+    override val toIO: IO[Char]           = IO.fromFuture(IO(toFuture))
+    override def tail: CatchKeybordImpl   = tailExtra
   }
+}
 
-  var instance: WrapIOEvent[Char] with CatchEvent[Char] with IOEventHandle[Char] with SetterImpl = gen
+class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]) extends NativeKeyListener {
 
   override def nativeKeyPressed(e: NativeKeyEvent): Unit = {
-    /*System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
-
-    if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE) {
-      try {
-        GlobalScreen.unregisterNativeHook();
-      } catch {
-        case nativeHookException: NativeHookException => nativeHookException.printStackTrace()
-      }
-    }*/
+    // System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()))
   }
 
   override def nativeKeyReleased(e: NativeKeyEvent): Unit = {
@@ -46,22 +40,21 @@ class GlobalKeyListenerExample extends NativeKeyListener {
   }
 
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
-    this.synchronized {
-      val catchInstance = instance
-      instance.tailExtra = gen
-      instance = instance.tailExtra
-      catchInstance.catchFunc.trySuccess(e.getKeyChar())
-    }
+    instance ! WeatherStation.CommandKey(e.getKeyChar())
     // System.out.println("Key Typed: " + e.getKeyChar())
   }
+
 }
 
 object Test0211111111111 extends IOApp.Simple {
 
   override val run: IO[Unit] = {
-    val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample()
-    val stream: Stream[IO, Char] = Stream.unfoldEval(listener.instance) { instance =>
-      for (r <- instance.toIO) yield Some(r -> instance.tail)
+    val instance                           = CatchKeybordImpl.gen
+    val actorSystem                        = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
+    val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSystem)
+
+    val stream: Stream[IO, Char] = Stream.unfoldEval(instance) { ins =>
+      for (r <- ins.toIO) yield Some(r -> ins.tail)
     }
 
     val action = stream.mapAsync(10)(t => IO(println(t)))
