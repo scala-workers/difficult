@@ -12,6 +12,7 @@ libraryDependencies ++= libScalax.`jnativehook`.value
 libraryDependencies ++= libScalax.`logback-classic`.value
 libraryDependencies ++= libScalax.`fs2`.value
 libraryDependencies ++= libScalax.`pekko-all`.value
+libraryDependencies ++= libScalax.`better-monadic-for`.value
 
 addCommandAlias("r1", "reStart")
 
