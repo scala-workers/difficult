@@ -79,15 +79,16 @@ object Test0211111111111 extends IOApp.Simple {
   override val run: IO[Unit] = {
     val instance = CatchKeybordImpl.gen
 
-    def actorSystemInstanceGen = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
-    val actorSystemResource: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
+    def actorSystemInstanceGen: ActorSystem[WeatherStation.Command]     = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
+    val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
 
-    actorSystemResource.use(actorSys => ExecImpl(actorSys, instance).execAction)
+    sysResources.use(actorSys => ExecImpl(actorSys, instance).execAction)
   }
 
 }
 
-class ActorSystemResources[F[_], T](val actorSystem: F[ActorSystem[T]]) {
+class ActorSystemResources[F[_], -T](actorSystem: F[ActorSystem[T]]) {
+
   private def closeAction[UF[_]: Async, U](actorSys: ActorSystem[U]): UF[Done] = for
     unitDone   <- Sync[UF].delay(actorSys.terminate())
     done: Done <- Async[UF].fromFuture(Sync[UF].delay(actorSys.whenTerminated))
