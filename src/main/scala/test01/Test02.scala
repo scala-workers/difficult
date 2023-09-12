@@ -20,15 +20,14 @@ trait CatchKeybordImpl {
   def toFuture: Future[Char]
   def toIO: IO[Char]
   def tail: CatchKeybordImpl
-  var tailExtra: CatchKeybordImpl = null
 }
 
 object CatchKeybordImpl {
   def gen: CatchKeybordImpl = new CatchKeybordImpl {
-    override val catchFunc: Promise[Char] = Promise[Char]
-    override val toFuture: Future[Char]   = catchFunc.future
-    override val toIO: IO[Char]           = IO.fromFuture(IO(toFuture))
-    override def tail: CatchKeybordImpl   = tailExtra
+    override val catchFunc: Promise[Char]    = Promise[Char]
+    override val toFuture: Future[Char]      = catchFunc.future
+    override val toIO: IO[Char]              = IO.fromFuture(IO(toFuture))
+    override lazy val tail: CatchKeybordImpl = gen
   }
 }
 
@@ -94,6 +93,7 @@ class ActorSystemResources[F[_], T](val actorSystem: F[ActorSystem[T]]) {
     done: Done <- Async[UF].fromFuture(Sync[UF].delay(actorSys.whenTerminated))
   yield done
 
-  def resource(using Async[F]): Resource[F, ActorSystem[T]] =
-    Resource.make(actorSystem)(sys => for done: Done <- closeAction(sys) yield done)
+  private def toUNIT[UF[_]: Functor, U](ueffect: UF[U]): UF[Unit] = for (tModel: U <- ueffect) yield tModel
+
+  def resource(using Async[F]): Resource[F, ActorSystem[T]] = Resource.make(actorSystem)(sys => toUNIT(closeAction(sys)))
 }

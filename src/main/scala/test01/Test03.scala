@@ -21,7 +21,6 @@ object WeatherStation {
 class WeatherStation(context: ActorContext[WeatherStation.Command], catcher: CatchKeybordImpl) {
 
   def running: Behavior[WeatherStation.Command] = Behaviors.receiveMessage { case WeatherStation.CommandKey(key) =>
-    catcher.tailExtra = CatchKeybordImpl.gen
     catcher.catchFunc.trySuccess(key)
     WeatherStation(catcher.tail)
   }
