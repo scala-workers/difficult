@@ -2,7 +2,7 @@ package test01
 
 import cats.*
 import cats.syntax.*
-import cats.implicits._
+import cats.implicits.given
 import cats.effect.*
 import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.NativeHookException
@@ -42,6 +42,7 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
   }
 
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
+
     instance ! WeatherStation.CommandKey(e.getKeyChar())
     // System.out.println("Key Typed: " + e.getKeyChar())
   }
@@ -50,16 +51,17 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
 
 object Test0211111111111 extends IOApp.Simple {
 
-  class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: CatchKeybordImpl) {
+  class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: CatchKeybordImpl):
+
     val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSys)
 
-    val stream: Stream[IO, Char] = Stream.unfoldEval(instance) { ins =>
-      for (r <- ins.toIO) yield Some(r -> ins.tail)
-    }
+    val streamPrepare: Stream[IO, Char] = Stream.unfoldEval(instance)(_.match
+      case ins => for (r <- ins.toIO) yield Some(r -> ins.tail)
+    )
 
-    val action = stream.mapAsync(10)(t => IO(println(t)))
+    val action = StreamDeal(streamPrepare).mapAsync
 
-    val execAction = IO
+    val execAction: IO[Unit] = IO
       .delay {
         try {
           GlobalScreen.registerNativeHook()
@@ -74,7 +76,8 @@ object Test0211111111111 extends IOApp.Simple {
         GlobalScreen.addNativeKeyListener(listener)
       }
       .flatTap(_ => action.compile.drain)
-  }
+
+  end ExecImpl
 
   override val run: IO[Unit] = {
     val instance = CatchKeybordImpl.gen
@@ -90,11 +93,11 @@ object Test0211111111111 extends IOApp.Simple {
 class ActorSystemResources[F[_], -T](actorSystem: F[ActorSystem[T]]) {
 
   private def closeAction[UF[_]: Async, U](actorSys: ActorSystem[U]): UF[Done] = for
-    unitDone   <- Sync[UF].delay(actorSys.terminate())
-    done: Done <- Async[UF].fromFuture(Sync[UF].delay(actorSys.whenTerminated))
-  yield done
+    unitDone              <- Sync[UF].delay(actorSys.terminate())
+    closeActionDone: Done <- Async[UF].fromFuture(Sync[UF].delay(actorSys.whenTerminated))
+  yield closeActionDone: Done
 
-  private def toUNIT[UF[_]: Functor, U](ueffect: UF[U]): UF[Unit] = for (tModel: U <- ueffect) yield tModel
+  def resource(using Async[F]): Resource[F, ActorSystem[T]] =
+    Resource.make(actorSystem)(sys => for doneToUnit <- closeAction(sys) yield doneToUnit: Done)
 
-  def resource(using Async[F]): Resource[F, ActorSystem[T]] = Resource.make(actorSystem)(sys => toUNIT(closeAction(sys)))
 }
