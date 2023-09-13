@@ -9,3 +9,4 @@
 **/metals.sbt
 /developAlias.sbt
 /nodeTemp/
+/project/sdap.sbt
