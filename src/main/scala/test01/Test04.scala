@@ -9,31 +9,24 @@ import org.apache.pekko.Done
 case class ListModel(l: List[Char])
 
 class StreamDeal[F[_]: Async](stream: Stream[F, Char]):
-  locally(().match
-    case _ =>
-      println("ss")
-      println("ss")
-      println("ss")
-      println("ss")
-  )
 
-  val foldStream: Stream[F, ListModel] = stream.fold(ListModel(List.empty))((_, _).match
-    case (m, charModel) => ListModel(charModel :: m.l)
-  )
-  val mapAsync: Stream[F, Done] = foldStream.map(_.l).map { u =>
-    /*Sync[F].delay*/
-    {
-      println(u)
-      Done
-    }
+  val foldStream: Stream[F, ListModel] = stream
+    .mapAccumulate(ListModel(List.empty))((_, _).match
+      case (listModel, charModel) =>
+        val tempModel = ListModel(charModel :: listModel.l)
+        tempModel -> Done
+    )
+    .map(_._1)
 
-    /*u match
-      case '5' :: '3' :: '1' :: '2' :: tail => for _ <- Sync[F].delay(println("啊啊啊" * 1000)) yield Done
-      case _ =>
-        Sync[F].delay {
-          println(u)
+  val mapAsync: Stream[F, Done] = foldStream.mapAsync(1)(_.l.match
+    case '2' :: '1' :: '3' :: '5' :: tail =>
+      Sync[F].delay(() match
+        case _ =>
+          println("触发热键" * 100)
           Done
-        }*/
-  }
+      )
+    case u =>
+      for (_ <- Sync[F].delay(println(u))) yield Done
+  )
 
 end StreamDeal
