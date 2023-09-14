@@ -23,7 +23,8 @@ object Test01 extends IOApp.Simple {
   def exec(nodeRuntime: NodeRuntime): IO[Unit] = {
     val execString: String =
       """
-        |const ioHook = require('iohook'); ioHook.on("keypress", event => { console.log(event); }); ioHook.start();
+        |const loudness = require('loudness')
+        |loudness.setVolume(20)
         |""".stripMargin
     def execAction: Unit = {
       println(JavetOSUtils.WORKING_DIRECTORY)
@@ -39,7 +40,8 @@ object Test01 extends IOApp.Simple {
       given V8Host <- v8Instance
       nodeRuntime  <- V8RuntimeBuilder(summon).instance
     } yield {
-      val workingDirectory: File = new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp")
+      val workingDirectory: File = new File(new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp"), "node_modules")
+      println(workingDirectory.getCanonicalFile)
       // Set the require root directory so that Node.js is able to locate node_modules.
       nodeRuntime.getNodeModule(classOf[NodeModuleModule]).setRequireRootDirectory(workingDirectory)
       nodeRuntime
