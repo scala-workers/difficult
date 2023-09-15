@@ -1,6 +1,6 @@
 package test01
 
-import bb.cc.{ActorSystemResources, CatchKeybordImpl}
+import bb.cc.{ActorSystemResources, CatchKeybordImpl, ExecImpl}
 import cats.*
 import cats.syntax.*
 import cats.implicits.given
@@ -34,38 +34,6 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
 }
 
 object Test0211111111111 extends IOApp.Simple {
-
-  class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl]):
-
-    val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSys)
-
-    val streamPrepare: Stream[IO, Char] = Stream.unfoldEval(IO.fromFuture(IO(instance)))(_.match
-      case ins =>
-        for
-          model        <- ins
-          charInstance <- model.toIO
-        yield Some(charInstance -> IO.fromFuture(IO(model.tail)))
-    )
-
-    val action = StreamDeal(streamPrepare).mapAsync
-
-    val execAction: IO[Unit] = IO
-      .delay {
-        try {
-          GlobalScreen.registerNativeHook()
-        } catch {
-          case ex: NativeHookException =>
-            System.err.println("There was a problem registering the native hook.")
-            System.err.println(ex.getMessage())
-
-            System.exit(1)
-        }
-
-        GlobalScreen.addNativeKeyListener(listener)
-      }
-      .flatTap(_ => action.compile.drain)
-
-  end ExecImpl
 
   override val run: IO[Unit] = {
     import scala.concurrent.ExecutionContext.Implicits.given
