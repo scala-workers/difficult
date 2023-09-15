@@ -1,5 +1,6 @@
 package test01
 
+import bb.cc.{ActorSystemResources, CatchKeybordImpl}
 import cats.*
 import cats.syntax.*
 import cats.implicits.given
@@ -14,22 +15,6 @@ import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-
-trait CatchKeybordImpl {
-  def inputKeyAndNext(charInstance: Char): Unit = catchFunc.trySuccess(charInstance)
-
-  protected val catchFunc: Promise[Char] = Promise[Char]
-  protected val toFuture: Future[Char]   = catchFunc.future
-  def toIO: IO[Char]                     = IO.fromFuture(IO(toFuture))
-  val tail: Future[CatchKeybordImpl]
-}
-
-object CatchKeybordImpl {
-  def gen(using ExecutionContext): CatchKeybordImpl = new CatchKeybordImpl {
-    self =>
-    override val tail: Future[CatchKeybordImpl] = for _: Char <- self.toFuture yield gen
-  }
-}
 
 class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]) extends NativeKeyListener {
 
@@ -84,24 +69,12 @@ object Test0211111111111 extends IOApp.Simple {
 
   override val run: IO[Unit] = {
     import scala.concurrent.ExecutionContext.Implicits.given
-    val instance = Future.successful(CatchKeybordImpl.gen(Future.successful(' ')))
+    val instance = Future.successful(CatchKeybordImpl.gen)
 
     def actorSystemInstanceGen: ActorSystem[WeatherStation.Command]     = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
     val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
 
     sysResources.use(actorSys => ExecImpl(actorSys, instance).execAction)
   }
-
-}
-
-class ActorSystemResources[F[_], -T](actorSystem: F[ActorSystem[T]]) {
-
-  private def closeAction[UF[_]: Async, U](actorSys: ActorSystem[U]): UF[Done] = for
-    unitDone              <- Sync[UF].delay(actorSys.terminate())
-    closeActionDone: Done <- Async[UF].fromFuture(Sync[UF].delay(actorSys.whenTerminated))
-  yield closeActionDone: Done
-
-  def resource(using Async[F]): Resource[F, ActorSystem[T]] =
-    Resource.make(actorSystem)(sys => for doneToUnit <- closeAction(sys) yield doneToUnit: Done)
 
 }

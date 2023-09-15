@@ -58,33 +58,6 @@ object V21AAA:
     ))
 end V21AAA
 
-class ToNodeRuntime(pool: IJavetEngine[NodeRuntime]):
-
-  private def resourceImpl[F[_]: Sync]: Resource[F, NodeRuntime] = Resource.fromAutoCloseable(Sync[F].delay(pool.getV8Runtime))
-
-  private def inputModule[F[_]: Sync](rumTime: NodeRuntime): Resource[F, NodeModuleModule] =
-    Resource.fromAutoCloseable(Sync[F].delay(rumTime.getNodeModule(classOf[NodeModuleModule])))
-
-  private def setModuleRoot[F[_]: Sync](nodeModuleModule: NodeModuleModule): F[Done] =
-    Sync[F].delay(().match
-      case _ =>
-        val workingDirectory: File = new File(new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp"), "node_modules")
-        nodeModuleModule.setRequireRootDirectory(workingDirectory)
-        Done
-    )
-  end setModuleRoot
-
-  private def setModuleRootResource[F[_]: Sync](nodeModuleModule: NodeModuleModule): Resource[F, Done] =
-    Resource.eval(setModuleRoot(nodeModuleModule))
-
-  def resource[F[_]: Sync]: Resource[F, NodeRuntime] = for
-    runtimeImpl      <- resourceImpl
-    nodeModuleModule <- inputModule(runtimeImpl)
-    done: Done       <- setModuleRootResource(nodeModuleModule)
-  yield runtimeImpl
-
-end ToNodeRuntime
-
 class ExecAction[F[_]](nodeRuntimeResource: Resource[F, NodeRuntime]):
   def setVolume(using Async[F]): F[Done] = nodeRuntimeResource.use(runtime => ExecActionImpl(runtime).action)
 end ExecAction
