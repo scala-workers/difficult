@@ -13,21 +13,21 @@ import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 trait CatchKeybordImpl {
-  def catchFunc: Promise[Char]
-  def toFuture: Future[Char]
-  def toIO: IO[Char]
-  def tail: CatchKeybordImpl
+  def inputKeyAndNext(charInstance: Char): Unit = catchFunc.trySuccess(charInstance)
+
+  protected val catchFunc: Promise[Char] = Promise[Char]
+  protected val toFuture: Future[Char]   = catchFunc.future
+  def toIO: IO[Char]                     = IO.fromFuture(IO(toFuture))
+  val tail: Future[CatchKeybordImpl]
 }
 
 object CatchKeybordImpl {
-  def gen: CatchKeybordImpl = new CatchKeybordImpl {
-    override val catchFunc: Promise[Char]    = Promise[Char]
-    override val toFuture: Future[Char]      = catchFunc.future
-    override val toIO: IO[Char]              = IO.fromFuture(IO(toFuture))
-    override lazy val tail: CatchKeybordImpl = gen
+  def gen(using ExecutionContext): CatchKeybordImpl = new CatchKeybordImpl {
+    self =>
+    override val tail: Future[CatchKeybordImpl] = for _: Char <- self.toFuture yield gen
   }
 }
 
@@ -42,7 +42,6 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
   }
 
   override def nativeKeyTyped(e: NativeKeyEvent): Unit = {
-
     instance ! WeatherStation.CommandKey(e.getKeyChar())
     // System.out.println("Key Typed: " + e.getKeyChar())
   }
@@ -51,12 +50,16 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
 
 object Test0211111111111 extends IOApp.Simple {
 
-  class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: CatchKeybordImpl):
+  class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl]):
 
     val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSys)
 
-    val streamPrepare: Stream[IO, Char] = Stream.unfoldEval(instance)(_.match
-      case ins => for (r <- ins.toIO) yield Some(r -> ins.tail)
+    val streamPrepare: Stream[IO, Char] = Stream.unfoldEval(IO.fromFuture(IO(instance)))(_.match
+      case ins =>
+        for
+          model        <- ins
+          charInstance <- model.toIO
+        yield Some(charInstance -> IO.fromFuture(IO(model.tail)))
     )
 
     val action = StreamDeal(streamPrepare).mapAsync
@@ -80,7 +83,8 @@ object Test0211111111111 extends IOApp.Simple {
   end ExecImpl
 
   override val run: IO[Unit] = {
-    val instance = CatchKeybordImpl.gen
+    import scala.concurrent.ExecutionContext.Implicits.given
+    val instance = Future.successful(CatchKeybordImpl.gen(Future.successful(' ')))
 
     def actorSystemInstanceGen: ActorSystem[WeatherStation.Command]     = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
     val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
