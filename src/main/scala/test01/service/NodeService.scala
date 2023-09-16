@@ -3,10 +3,6 @@ package bb.cc
 import cats.*
 import cats.implicits.given
 import cats.effect.*
-import com.caoccao.javet.interop.NodeRuntime
-import com.caoccao.javet.interop.engine.IJavetEngine
-import com.caoccao.javet.node.modules.NodeModuleModule
-import com.caoccao.javet.utils.JavetOSUtils
 import com.github.kwhat.jnativehook.{GlobalScreen, NativeHookException}
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.ActorSystem
@@ -15,7 +11,6 @@ import test01.{GlobalKeyListenerExample, StreamDeal}
 import fs2.*
 import test01.service.SetVolumeService
 
-import java.io.File
 import scala.concurrent.Future
 
 class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl], setVolumeService: SetVolumeService[IO]):
@@ -30,7 +25,7 @@ class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[C
       yield Some(charInstance -> IO.fromFuture(IO(model.tail)))
   )
 
-  val action = StreamDeal(streamPrepare).mapAsync
+  val action = StreamDeal(streamPrepare, setVolumeService = setVolumeService).mapAsync
 
   val execAction: IO[Unit] = IO
     .delay {
