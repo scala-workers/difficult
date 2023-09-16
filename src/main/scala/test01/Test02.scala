@@ -1,10 +1,11 @@
 package test01
 
-import bb.cc.{ActorSystemResources, CatchKeybordImpl, ExecImpl}
+import bb.cc.{ActorSystemResources, CatchKeybordImpl, ExecImpl, ToNodeRuntime}
 import cats.*
 import cats.syntax.*
 import cats.implicits.given
 import cats.effect.*
+import com.caoccao.javet.interop.NodeRuntime
 import com.github.kwhat.jnativehook.GlobalScreen
 import com.github.kwhat.jnativehook.NativeHookException
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
@@ -13,6 +14,10 @@ import fs2.*
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
+import test01.node_runtime.V21AAA
+import com.caoccao.javet.interop.engine.{IJavetEngine, IJavetEnginePool, JavetEnginePool}
+import test01.node_runtime.JavetEngineWrap
+import test01.service.SetVolumeService
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -42,7 +47,19 @@ object Test0211111111111 extends IOApp.Simple {
     def actorSystemInstanceGen: ActorSystem[WeatherStation.Command]     = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
     val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
 
-    sysResources.use(actorSys => ExecImpl(actorSys, instance).execAction)
+    val runtimeResource: Resource[IO, Resource[IO, NodeRuntime]] = for
+      given IJavetEnginePool[NodeRuntime] <- V21AAA.resource[IO]
+      given IJavetEngine[NodeRuntime]     <- JavetEngineWrap(summon).resource[IO]
+      given Resource[IO, NodeRuntime] = ToNodeRuntime(summon).resource[IO]
+    yield summon
+
+    val execImpl = for
+      given ActorSystem[WeatherStation.Command] <- sysResources
+      nodeRuntime                               <- runtimeResource
+      given SetVolumeService[IO] = SetVolumeService(nodeRuntime)
+    yield ExecImpl(summon, instance, summon)
+
+    execImpl.use(_.execAction)
   }
 
 }
