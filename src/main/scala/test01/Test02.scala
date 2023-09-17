@@ -6,16 +6,12 @@ import cats.syntax.*
 import cats.implicits.given
 import cats.effect.*
 import com.caoccao.javet.interop.NodeRuntime
-import com.github.kwhat.jnativehook.GlobalScreen
-import com.github.kwhat.jnativehook.NativeHookException
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
 import fs2.*
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
-import com.caoccao.javet.interop.engine.{IJavetEngine, IJavetEnginePool, JavetEnginePool}
-import test01.node_runtime.JavetEngineWrap
 import test01.service.SetVolumeService
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -37,9 +33,9 @@ class GlobalKeyListenerExample(val instance: ActorSystem[WeatherStation.Command]
 
 }
 
-object Test0211111111111 extends IOApp.Simple {
+object Test0211111111111 extends IOApp.Simple:
 
-  override val run: IO[Unit] = {
+  override val run: IO[Unit] =
     import scala.concurrent.ExecutionContext.Implicits.given
     val instance = Future.successful(CatchKeybordImpl.gen)
 
@@ -47,9 +43,8 @@ object Test0211111111111 extends IOApp.Simple {
     val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
 
     val runtimeResource: Resource[IO, Resource[IO, NodeRuntime]] = for
-      given IJavetEnginePool[NodeRuntime] <- V21AAA.resource[IO]
-      given IJavetEngine[NodeRuntime]     <- JavetEngineWrap(summon).resource[IO]
-      given Resource[IO, NodeRuntime] = ToNodeRuntime(summon).resource[IO]
+      given ToNodeRuntime <- V21AAA.resource[IO]
+      given Resource[IO, NodeRuntime] = summon[ToNodeRuntime].resource[IO]
     yield summon
 
     val execImpl = for
@@ -59,6 +54,6 @@ object Test0211111111111 extends IOApp.Simple {
     yield ExecImpl(summon, instance, summon)
 
     execImpl.use(_.execAction)
-  }
+  end run
 
-}
+end Test0211111111111
