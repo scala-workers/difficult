@@ -6,7 +6,7 @@ import cats.effect.*
 import com.caoccao.javet.interop.NodeRuntime
 import com.caoccao.javet.interop.engine.{IJavetEngine, IJavetEnginePool}
 import org.apache.pekko.Done
-import test01.node_runtime.{JavetEngineWrap, V21AAA}
+import test01.node_runtime.JavetEngineWrap
 import test01.service.SetVolumeService
 
 import java.io.File
@@ -16,9 +16,8 @@ object Test01 extends IOApp.Simple:
 
   def runDone[F[_]: Async]: F[Done] =
     val runtimeResource = for
-      given IJavetEnginePool[NodeRuntime] <- V21AAA.resource[F]
-      given IJavetEngine[NodeRuntime]     <- JavetEngineWrap(summon).resource[F]
-      given Resource[F, NodeRuntime] = ToNodeRuntime(summon).resource[F]
+      given ToNodeRuntime <- V21AAA.resource[F]
+      given Resource[F, NodeRuntime] = summon[ToNodeRuntime].resource[F]
     yield SetVolumeService(summon)
 
     runtimeResource.use(v => v.setVolume)

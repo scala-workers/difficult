@@ -3,17 +3,18 @@ package bb.cc
 import cats.*
 import cats.implicits.given
 import cats.effect.*
+import com.caoccao.javet.enums.JSRuntimeType
 import com.caoccao.javet.interop.NodeRuntime
-import com.caoccao.javet.interop.engine.IJavetEngine
+import com.caoccao.javet.interop.engine.{IJavetEngine, IJavetEnginePool, JavetEnginePool}
 import com.caoccao.javet.node.modules.NodeModuleModule
 import com.caoccao.javet.utils.JavetOSUtils
 import org.apache.pekko.Done
 
 import java.io.File
 
-class ToNodeRuntime(pool: IJavetEngine[NodeRuntime]):
+class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]):
 
-  private def resourceImpl[F[_]: Sync]: Resource[F, NodeRuntime] = Resource.fromAutoCloseable(Sync[F].delay(pool.getV8Runtime))
+  private def resourceImpl[F[_]: Sync]: Resource[F, NodeRuntime] = Resource.fromAutoCloseable(Sync[F].delay(pool.getEngine.getV8Runtime))
 
   private def inputModule[F[_]: Sync](rumTime: NodeRuntime): Resource[F, NodeModuleModule] =
     Resource.fromAutoCloseable(Sync[F].delay(rumTime.getNodeModule(classOf[NodeModuleModule])))
@@ -35,3 +36,14 @@ class ToNodeRuntime(pool: IJavetEngine[NodeRuntime]):
   yield runtimeInstance
 
 end ToNodeRuntime
+
+object V21AAA:
+  def resource[F[_]: Sync]: Resource[F, ToNodeRuntime] =
+    val poolResource = Resource.fromAutoCloseable(Sync[F].delay(().match
+      case _ =>
+        val pool = JavetEnginePool[NodeRuntime]()
+        pool.getConfig().setJSRuntimeType(JSRuntimeType.Node)
+        pool
+    ))
+    for pool <- poolResource yield ToNodeRuntime(pool)
+end V21AAA

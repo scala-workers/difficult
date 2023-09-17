@@ -10,13 +10,3 @@ import com.caoccao.javet.interop.engine.{IJavetEngine, IJavetEnginePool, JavetEn
 class JavetEngineWrap(bb: IJavetEnginePool[NodeRuntime]):
   def resource[F[_]: Sync]: Resource[F, IJavetEngine[NodeRuntime]] = Resource.fromAutoCloseable(Sync[F].delay(bb.getEngine))
 end JavetEngineWrap
-
-object V21AAA:
-  def resource[F[_]: Sync]: Resource[F, IJavetEnginePool[NodeRuntime]] =
-    Resource.fromAutoCloseable(Sync[F].delay(().match
-      case _ =>
-        val pool = JavetEnginePool[NodeRuntime]()
-        pool.getConfig().setJSRuntimeType(JSRuntimeType.Node)
-        pool
-    ))
-end V21AAA
