@@ -9,7 +9,7 @@ import test01.service.SetVolumeService
 
 case class ListModel(l: List[Char])
 
-class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: SetVolumeService[F]):
+class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: SetVolumeService):
 
   val foldStream: Stream[F, ListModel] = stream
     .mapAccumulate(ListModel(List.empty))((_, _).match
@@ -21,12 +21,12 @@ class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: SetVolu
 
   val mapAsync: Stream[F, Done] = foldStream.mapAsync(1)(_.l.match
     case '2' :: '1' :: '3' :: '5' :: tail =>
-      Sync[F].delay(() match
+      Sync[F].delay(().match
         case _ =>
           println("触发热键" * 100)
           Done
       )
-      setVolumeService.setVolume
+      for _ <- setVolumeService.setVolume(30) yield Done
     case u =>
       for (_ <- Sync[F].delay(println(u))) yield Done
   )

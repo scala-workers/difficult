@@ -20,7 +20,7 @@ object Test01 extends IOApp.Simple:
       given Resource[F, NodeRuntime] = summon[ToNodeRuntime].resource[F]
     yield SetVolumeService(summon)
 
-    runtimeResource.use(v => v.setVolume)
+    runtimeResource.use(v => for _ <- v.setVolume yield Done)
   end runDone
 
   def toUNIt[F[_]: Functor](f: F[Done]): F[Unit] = for (done: Done <- f) yield done

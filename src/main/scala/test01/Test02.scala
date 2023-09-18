@@ -12,7 +12,7 @@ import fs2.*
 import org.apache.pekko.Done
 import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
-import test01.service.SetVolumeService
+import test01.service.{SetVolCusFunction, SetVolumeService, ToFunction}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -39,18 +39,21 @@ object Test0211111111111 extends IOApp.Simple:
     import scala.concurrent.ExecutionContext.Implicits.given
     val instance = Future.successful(CatchKeybordImpl.gen)
 
-    def actorSystemInstanceGen: ActorSystem[WeatherStation.Command]     = ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
-    val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(IO(actorSystemInstanceGen)).resource
+    val actorSystemInstanceGen: IO[ActorSystem[WeatherStation.Command]] = IO(
+      ActorSystem.create(WeatherStation(instance), "uusdrlsdfsdnkwe")
+    )
+    val sysResources: Resource[IO, ActorSystem[WeatherStation.Command]] = ActorSystemResources(actorSystemInstanceGen).resource
 
-    val runtimeResource: Resource[IO, Resource[IO, NodeRuntime]] = for
+    val runtimeResource: Resource[IO, NodeRuntime] = for
       given ToNodeRuntime <- V21AAA.resource[IO]
-      given Resource[IO, NodeRuntime] = summon[ToNodeRuntime].resource[IO]
+      given NodeRuntime   <- summon[ToNodeRuntime].resource[IO]
     yield summon
 
     val execImpl = for
       given ActorSystem[WeatherStation.Command] <- sysResources
-      nodeRuntime                               <- runtimeResource
-      given SetVolumeService[IO] = SetVolumeService(nodeRuntime)
+      given NodeRuntime                         <- runtimeResource
+      given SetVolCusFunction                   <- ToFunction(summon).resource[IO]
+      given SetVolumeService = SetVolumeService(using summon, summon)
     yield ExecImpl(summon, instance, summon)
 
     execImpl.use(_.execAction)

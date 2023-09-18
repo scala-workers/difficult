@@ -13,7 +13,7 @@ import test01.service.SetVolumeService
 
 import scala.concurrent.Future
 
-class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl], setVolumeService: SetVolumeService[IO]):
+class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl], setVolumeService: SetVolumeService):
 
   val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSys)
 
@@ -42,5 +42,8 @@ class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[C
       GlobalScreen.addNativeKeyListener(listener)
     }
     .flatTap(_ => action.compile.drain)
+    .recover { case e =>
+      e.printStackTrace()
+    }
 
 end ExecImpl
