@@ -1,6 +1,6 @@
 import sbt.dependsOn
 
-scalaVersion := scalaV.v3
+scalaVersion := scalaV.v211
 
 scalafmtOnCompile := true
 
@@ -12,7 +12,7 @@ libraryDependencies ++= libScalax.`jintellitype`.value
 libraryDependencies ++= libScalax.`jnativehook`.value
 libraryDependencies ++= libScalax.`logback-classic`.value
 libraryDependencies ++= libScalax.`fs2`.value
-libraryDependencies ++= libScalax.`pekko-all`.value
+// libraryDependencies ++= libScalax.`pekko-all`.value
 libraryDependencies ++= libScalax.`better-monadic-for`.value
 
 val setVol = project in file("modules") / "setVol"

@@ -26,7 +26,8 @@ class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]) {
       nodeModuleModule.setRequireRootDirectory(workingDirectory)
       ScalaxDone
     }
-    Resource.eval(setterAction)
+    val liftK = Resource.liftK[F]
+    liftK(setterAction)
   }
 
   def resource[F[_]: Sync]: Resource[F, NodeRuntime] = for {

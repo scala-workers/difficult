@@ -1,4 +1,4 @@
-scalaVersion := scalaV.v3
+scalaVersion := scalaV.v213
 
 crossScalaVersions := List(scalaV.v212, scalaV.v213, scalaV.v3)
 

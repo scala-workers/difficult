@@ -33,8 +33,9 @@ class ToFunction(nodeRuntime: NodeRuntime) {
 
     val resourceAction = Resource.fromAutoCloseable(functionAction)
 
+    val liftK = Resource.liftK[F]
     for {
-      unitAction <- Resource.eval(preAction)
+      unitAction <- liftK(preAction)
       re         <- resourceAction
     } yield SetVolCusFunction(func = re)
   }
