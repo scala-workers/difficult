@@ -5,7 +5,6 @@ import cats.effect._
 import cats.implicits._
 import com.caoccao.javet.annotations.V8Function
 import com.caoccao.javet.interop.NodeRuntime
-import com.caoccao.javet.values.V8Value
 import com.caoccao.javet.values.primitive.V8ValueInteger
 import com.caoccao.javet.values.reference.V8ValueObject
 import net.scalax.ScalaxDone
@@ -27,17 +26,18 @@ class HaveATest(catchFunc: SetVolumeFinished => Unit) {
 
 class SetVolumeService(implicit nodeRuntime: NodeRuntime, setVolCusFunction: SetVolCusFunction) {
 
-  def setVolume[F[_]: Async](volume: Int): F[SetVolumeFinished] = new SetVolumeServiceImpl(implicitly, implicitly).action(volume)
+  def setVolume[F[_]: Async: CatsCompat.CompatContextShift](volume: Int): F[SetVolumeFinished] =
+    new SetVolumeServiceImpl(implicitly, implicitly).action(volume)
 
 }
 
 class SetVolumeServiceImpl(nodeRuntime: NodeRuntime, toFunction: SetVolCusFunction) {
 
-  def action[F[_]: Async](volume: Int): F[SetVolumeFinished] = {
+  def action[F[_]: Async: CatsCompat.CompatContextShift](volume: Int): F[SetVolumeFinished] = {
 
     val promise                          = Promise[SetVolumeFinished]
     val future                           = promise.future
-    val finishedIO: F[SetVolumeFinished] = Async[F].fromFuture(Sync[F].delay(future))
+    val finishedIO: F[SetVolumeFinished] = CatsCompat.asyncFromFuture[F, SetVolumeFinished](Sync[F].delay(future))
 
     val bindedJSModel = Sync[F].delay {
       val v8Obj = nodeRuntime.createV8ValueObject

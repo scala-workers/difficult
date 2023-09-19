@@ -21,7 +21,7 @@ class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]) {
     Resource.fromAutoCloseable(Sync[F].delay(rumTime.getNodeModule(classOf[NodeModuleModule])))
 
   private def setModuleRootResource[F[_]: Sync](nodeModuleModule: NodeModuleModule): Resource[F, ScalaxDone] = {
-    val setterAction = Sync[F].delay {
+    val setterAction: F[ScalaxDone] = Sync[F].delay {
       val workingDirectory: File = new File(new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp"), "node_modules")
       nodeModuleModule.setRequireRootDirectory(workingDirectory)
       ScalaxDone

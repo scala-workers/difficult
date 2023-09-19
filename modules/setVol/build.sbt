@@ -1,6 +1,6 @@
-scalaVersion := scalaV.v213
+scalaVersion := scalaV.v3
 
-crossScalaVersions := List(scalaV.v212, scalaV.v213, scalaV.v3)
+crossScalaVersions := List(scalaV.v211, scalaV.v212, scalaV.v213, scalaV.v3)
 
 scalafmtOnCompile := true
 

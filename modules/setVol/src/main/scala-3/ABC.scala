@@ -4,8 +4,20 @@ import cats._
 import cats.effect._
 import cats.implicits._
 
-object ResourceImpl {
+import scala.concurrent.Future
 
-  def FToResourceF[F[_]](applicative: Applicative[F]): F ~> ({ type FA[B] = Resource[F, B] })#FA = Resource.liftK
+object CatsCompat {
+
+  type CompatContextShift[F[_]] = ContextShiftCompat[F]
+
+  trait ContextShiftCompat[F[_]]
+
+  object ContextShiftCompat {
+    implicit def compatImplicit[F[_]]: ContextShiftCompat[F] = new ContextShiftCompat[F] {
+      //
+    }
+  }
+
+  def asyncFromFuture[F[_], T](fa: F[Future[T]])(implicit F: Async[F]): F[T] = Async[F].fromFuture(fa)
 
 }
