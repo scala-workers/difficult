@@ -11,15 +11,23 @@ import net.scalax.ScalaxDone
 
 import scala.concurrent.Promise
 
-case class SetVolumeFinished(volume: Int)
+case class SetVolumeFinished(successsed: Boolean)
+case class GetVolumeFinished(volume: Int)
+
+class HaveATest2(catchFunc: GetVolumeFinished => Unit) {
+
+  @V8Function(name = "getVolumeFinished")
+  def getVolumeFinished(volume: Int): Unit = {
+    catchFunc(GetVolumeFinished(volume))
+  }
+
+}
 
 class HaveATest(catchFunc: SetVolumeFinished => Unit) {
 
-  @V8Function(name = "finished")
-  def finished(volume: Int): Unit = {
-    println("喵呜呜完成啦lalalalala")
-    println(volume)
-    catchFunc(SetVolumeFinished(volume = volume))
+  @V8Function(name = "setVolumeFinished")
+  def setVolumeFinished(successed: Boolean): Unit = {
+    catchFunc(SetVolumeFinished(successsed = successed))
   }
 
 }
@@ -51,7 +59,7 @@ class SetVolumeServiceImpl(nodeRuntime: NodeRuntime, toFunction: SetVolCusFuncti
 
     def modelAction(v8Int: V8ValueInteger, v8Obj: V8ValueObject): F[SetVolumeFinished] = {
       val execNode = Sync[F].delay {
-        toFunction.func.callVoid(null, v8Int, v8Obj)
+        toFunction.setVolumeAction.callVoid(null, v8Int, v8Obj)
         nodeRuntime.await
       }
 

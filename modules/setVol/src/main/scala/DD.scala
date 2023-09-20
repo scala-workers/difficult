@@ -4,21 +4,27 @@ import cats._
 import cats.effect._
 import cats.implicits._
 import com.caoccao.javet.interop.NodeRuntime
-import com.caoccao.javet.values.reference.V8ValueFunction
-
+import com.caoccao.javet.values.reference.{V8ValueFunction, V8ValueObject}
 import net.scalax.ScalaxDone
 
-case class SetVolCusFunction(func: V8ValueFunction)
+case class SetVolCusFunction(setVolumeAction: V8ValueFunction)
 
 class ToFunction(nodeRuntime: NodeRuntime) {
 
   val execString: String =
     """
       |const loudness = require('loudness')
-      |async function setV(numValue, returnObj) {
+      |async function setVolumeAction(numValue, asyncCatchObj) {
       |  await loudness.setVolume(numValue);
+      |  asyncCatchObj.setVolumeFinished(true);
+      |}
+      |async function getVolumeAction(asyncCatchObj) {
       |  const vValue = await loudness.getVolume();
-      |  returnObj.finished(vValue);
+      |  asyncCatchObj.getVolumeFinished(vValue);
+      |}
+      |const exportObject = {
+      |  setVolumeAction: setVolumeAction,
+      |  getVolumeAction: getVolumeAction
       |}
       |""".stripMargin
 
@@ -28,16 +34,22 @@ class ToFunction(nodeRuntime: NodeRuntime) {
     }
 
     val functionAction = Sync[F].delay {
-      nodeRuntime.getExecutor("setV; ").execute[V8ValueFunction]
+      nodeRuntime.getExecutor("exportObject; ").execute[V8ValueObject]
     }
 
     val resourceAction = Resource.fromAutoCloseable(functionAction)
+
+    def setVolumeActionF(v8Obj: V8ValueObject): F[V8ValueFunction] = Sync[F].delay {
+      v8Obj.getProperty[V8ValueFunction]("setVolumeAction")
+    }
+    def resourcesetVolumeActionF(v8Obj: V8ValueObject): Resource[F, V8ValueFunction] = Resource.fromAutoCloseable(setVolumeActionF(v8Obj))
 
     val liftK = Resource.liftK[F]
     for {
       unitAction <- liftK(preAction)
       re         <- resourceAction
-    } yield SetVolCusFunction(func = re)
+      setFuncRe  <- resourcesetVolumeActionF(re)
+    } yield SetVolCusFunction(setVolumeAction = setFuncRe)
   }
 
 }
