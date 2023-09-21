@@ -28,8 +28,8 @@ class ToFunction(nodeRuntime: NodeRuntime) {
       |  asyncCatchObj.getVolumeFinished(vValue);
       |}
       |async function setMutedAction(needMuted, asyncCatchObj) {
-      |  const aa = await loudness.setMuted(numValue);
-      |  asyncCatchObj.setMutedFinished(JSON.stringify(aa));
+      |  await loudness.setMuted(needMuted);
+      |  asyncCatchObj.setMutedFinished(true);
       |}
       |async function getMutedAction(asyncCatchObj) {
       |  const mValue = await loudness.getMuted();

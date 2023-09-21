@@ -6,11 +6,16 @@ import cats.implicits.given
 import cats.effect.*
 import org.apache.pekko.Done
 import test01.node_runtime.LoudnessService
-import test01.service.SetVolumeService
+import test01.service.SetMutedFinished
 
 case class ListModel(l: List[Char])
 
 class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: LoudnessService[F]):
+
+  val changeMutedAction: F[SetMutedFinished] = for
+    isMuted                    <- setVolumeService.getMuted
+    finished: SetMutedFinished <- setVolumeService.setMuted(!isMuted.isMuted)
+  yield finished
 
   val foldStream: Stream[F, ListModel] = stream
     .mapAccumulate(ListModel(List.empty))((_, _).match
@@ -27,7 +32,7 @@ class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: Loudnes
           println("触发热键" * 100)
           Done
       )
-      for _ <- setVolumeService.setVolume(30) yield Done
+      for _: SetMutedFinished <- changeMutedAction yield Done
     case u =>
       for (_ <- Sync[F].delay(println(u))) yield Done
   )

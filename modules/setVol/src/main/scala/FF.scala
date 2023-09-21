@@ -11,12 +11,12 @@ import net.scalax.ScalaxDone
 
 import scala.concurrent.Promise
 
-case class SetMutedFinished(succeeded: String)
+case class SetMutedFinished(succeeded: Boolean)
 
 class HaveATest4(catchFunc: SetMutedFinished => Unit) {
 
   @V8Function(name = "setMutedFinished")
-  def getVolumeFinished(succeeded: String): Unit = {
+  def getVolumeFinished(succeeded: Boolean): Unit = {
     catchFunc(SetMutedFinished(succeeded = succeeded))
   }
 
@@ -25,7 +25,7 @@ class HaveATest4(catchFunc: SetMutedFinished => Unit) {
 class SetMutedService(implicit nodeRuntime: NodeRuntime, setVolumeFinished: SetVolCusFunction) {
 
   def setMuted[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[SetMutedFinished] =
-    new SetMutedServiceImpl(implicitly, setMutedFunction = setVolumeFinished.getVolumeAction).action(needMuted)
+    Sync[F].delay(new SetMutedServiceImpl(implicitly, setMutedFunction = setVolumeFinished.setMutedAction).action(needMuted)).flatten
 
 }
 

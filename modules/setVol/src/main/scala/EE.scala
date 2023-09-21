@@ -24,7 +24,7 @@ class HaveATest3(catchFunc: GetVolumeFinished => Unit) {
 class GetVolumeService(implicit nodeRuntime: NodeRuntime, setVolumeFinished: SetVolCusFunction) {
 
   def getVolume[F[_]: Async: CatsCompat.CompatContextShift]: F[GetVolumeFinished] =
-    new GetVolumeServiceImpl(implicitly, getVolumeFunction = setVolumeFinished.getVolumeAction).action
+    Sync[F].delay(new GetVolumeServiceImpl(implicitly, getVolumeFunction = setVolumeFinished.getVolumeAction).action).flatten
 
 }
 

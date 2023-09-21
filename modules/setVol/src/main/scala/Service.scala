@@ -19,10 +19,10 @@ import test01.service.{
 }
 
 trait LoudnessService[F[_]] {
-  def setVolume(volume: Int): F[SetVolumeFinished]
   def getVolume: F[GetVolumeFinished]
-  def setMuted(muted: Boolean): F[SetMutedFinished]
+  def setVolume(volume: Int): F[SetVolumeFinished]
   def getMuted: F[GetMutedFinished]
+  def setMuted(muted: Boolean): F[SetMutedFinished]
 }
 
 abstract class LoudnessServiceImpl1[F[_]: Async: CatsCompat.CompatContextShift] extends LoudnessService[F] {
