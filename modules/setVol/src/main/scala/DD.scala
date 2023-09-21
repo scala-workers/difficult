@@ -7,7 +7,12 @@ import com.caoccao.javet.interop.NodeRuntime
 import com.caoccao.javet.values.reference.{V8ValueFunction, V8ValueObject}
 import net.scalax.ScalaxDone
 
-case class SetVolCusFunction(setVolumeAction: V8ValueFunction)
+case class SetVolCusFunction(
+  setVolumeAction: V8ValueFunction,
+  getVolumeAction: V8ValueFunction,
+  setMutedAction: V8ValueFunction,
+  getMutedAction: V8ValueFunction
+)
 
 class ToFunction(nodeRuntime: NodeRuntime) {
 
@@ -22,9 +27,19 @@ class ToFunction(nodeRuntime: NodeRuntime) {
       |  const vValue = await loudness.getVolume();
       |  asyncCatchObj.getVolumeFinished(vValue);
       |}
+      |async function setMutedAction(needMuted, asyncCatchObj) {
+      |  const aa = await loudness.setMuted(numValue);
+      |  asyncCatchObj.setMutedFinished(JSON.stringify(aa));
+      |}
+      |async function getMutedAction(asyncCatchObj) {
+      |  const mValue = await loudness.getMuted();
+      |  asyncCatchObj.getMutedFinished(mValue);
+      |}
       |const exportObject = {
       |  setVolumeAction: setVolumeAction,
-      |  getVolumeAction: getVolumeAction
+      |  getVolumeAction: getVolumeAction,
+      |  setMutedAction: setMutedAction,
+      |  getMutedAction: getMutedAction
       |}
       |""".stripMargin
 
@@ -39,17 +54,28 @@ class ToFunction(nodeRuntime: NodeRuntime) {
 
     val resourceAction = Resource.fromAutoCloseable(functionAction)
 
-    def setVolumeActionF(v8Obj: V8ValueObject): F[V8ValueFunction] = Sync[F].delay {
-      v8Obj.getProperty[V8ValueFunction]("setVolumeAction")
+    def getPropertyFunctionFromObj(v8Obj: V8ValueObject): String => Resource[F, V8ValueFunction] = { proName =>
+      val funcF = Sync[F].delay {
+        v8Obj.getProperty[V8ValueFunction](proName)
+      }
+      Resource.fromAutoCloseable(funcF)
     }
-    def resourcesetVolumeActionF(v8Obj: V8ValueObject): Resource[F, V8ValueFunction] = Resource.fromAutoCloseable(setVolumeActionF(v8Obj))
 
     val liftK = Resource.liftK[F]
     for {
       unitAction <- liftK(preAction)
       re         <- resourceAction
-      setFuncRe  <- resourcesetVolumeActionF(re)
-    } yield SetVolCusFunction(setVolumeAction = setFuncRe)
+      getter = getPropertyFunctionFromObj(re)
+      setVolFuncRe <- getter("setVolumeAction")
+      getVolFuncRe <- getter("getVolumeAction")
+      setMutedRe   <- getter("setMutedAction")
+      getMutedRe   <- getter("getMutedAction")
+    } yield SetVolCusFunction(
+      setVolumeAction = setVolFuncRe,
+      getVolumeAction = getVolFuncRe,
+      setMutedAction = setMutedRe,
+      getMutedAction = getMutedRe
+    )
   }
 
 }

@@ -6,22 +6,12 @@ import cats.implicits._
 import com.caoccao.javet.annotations.V8Function
 import com.caoccao.javet.interop.NodeRuntime
 import com.caoccao.javet.values.primitive.V8ValueInteger
-import com.caoccao.javet.values.reference.V8ValueObject
+import com.caoccao.javet.values.reference.{V8ValueFunction, V8ValueObject}
 import net.scalax.ScalaxDone
 
 import scala.concurrent.Promise
 
 case class SetVolumeFinished(successsed: Boolean)
-case class GetVolumeFinished(volume: Int)
-
-class HaveATest2(catchFunc: GetVolumeFinished => Unit) {
-
-  @V8Function(name = "getVolumeFinished")
-  def getVolumeFinished(volume: Int): Unit = {
-    catchFunc(GetVolumeFinished(volume))
-  }
-
-}
 
 class HaveATest(catchFunc: SetVolumeFinished => Unit) {
 
@@ -35,11 +25,11 @@ class HaveATest(catchFunc: SetVolumeFinished => Unit) {
 class SetVolumeService(implicit nodeRuntime: NodeRuntime, setVolCusFunction: SetVolCusFunction) {
 
   def setVolume[F[_]: Async: CatsCompat.CompatContextShift](volume: Int): F[SetVolumeFinished] =
-    new SetVolumeServiceImpl(implicitly, implicitly).action(volume)
+    new SetVolumeServiceImpl(implicitly, setVolumeFunction = setVolCusFunction.setVolumeAction).action(volume)
 
 }
 
-class SetVolumeServiceImpl(nodeRuntime: NodeRuntime, toFunction: SetVolCusFunction) {
+class SetVolumeServiceImpl(nodeRuntime: NodeRuntime, setVolumeFunction: V8ValueFunction) {
 
   def action[F[_]: Async: CatsCompat.CompatContextShift](volume: Int): F[SetVolumeFinished] = {
 
@@ -59,7 +49,7 @@ class SetVolumeServiceImpl(nodeRuntime: NodeRuntime, toFunction: SetVolCusFuncti
 
     def modelAction(v8Int: V8ValueInteger, v8Obj: V8ValueObject): F[SetVolumeFinished] = {
       val execNode = Sync[F].delay {
-        toFunction.setVolumeAction.callVoid(null, v8Int, v8Obj)
+        setVolumeFunction.callVoid(null, v8Int, v8Obj)
         nodeRuntime.await
       }
 
