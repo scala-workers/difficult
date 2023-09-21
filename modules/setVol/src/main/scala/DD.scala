@@ -19,8 +19,8 @@ class ToFunction(nodeRuntime: NodeRuntime) {
   val execString: String =
     """
       |const loudness = require('loudness')
-      |async function setVolumeAction(numValue, asyncCatchObj) {
-      |  await loudness.setVolume(numValue);
+      |async function setVolumeAction(intVolValue, asyncCatchObj) {
+      |  await loudness.setVolume(intVolValue);
       |  asyncCatchObj.setVolumeFinished(true);
       |}
       |async function getVolumeAction(asyncCatchObj) {

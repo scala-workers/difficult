@@ -16,8 +16,8 @@ case class SetVolumeFinished(successsed: Boolean)
 class HaveATest(catchFunc: SetVolumeFinished => Unit) {
 
   @V8Function(name = "setVolumeFinished")
-  def setVolumeFinished(successed: Boolean): Unit = {
-    catchFunc(SetVolumeFinished(successsed = successed))
+  def setVolumeFinished(successsed: Boolean): Unit = {
+    catchFunc(SetVolumeFinished(successsed = successsed))
   }
 
 }
