@@ -23,18 +23,17 @@ class HaveATest3(catchFunc: GetVolumeFinished => Unit) {
 
 class GetVolumeService(implicit nodeRuntime: NodeRuntime, setVolumeFinished: SetVolCusFunction) {
 
-  def getVolume[F[_]: Async: CatsCompat.CompatContextShift]: F[GetVolumeFinished] = {
-    val service = new GetVolumeServiceImpl(implicitly, getVolumeFunction = setVolumeFinished.getVolumeAction)
-    Sync[F].delay(service.action).flatten
-  }
+  def getVolume[F[_]: Async: CatsCompat.CompatContextShift]: F[GetVolumeFinished] =
+    new GetVolumeServiceImpl(implicitly, getVolumeFunction = setVolumeFinished.getVolumeAction).action
 
 }
 
 class GetVolumeServiceImpl(nodeRuntime: NodeRuntime, getVolumeFunction: V8ValueFunction) {
 
-  def action[F[_]: Async: CatsCompat.CompatContextShift]: F[GetVolumeFinished] = {
+  def promiseF[F[_]: Sync]: F[Promise[GetVolumeFinished]] = Sync[F].delay(Promise[GetVolumeFinished])
 
-    val promise                          = Promise[GetVolumeFinished]
+  def action[F[_]: Async: CatsCompat.CompatContextShift]: F[GetVolumeFinished] = promiseF.flatMap { promise =>
+
     val future                           = promise.future
     val finishedIO: F[GetVolumeFinished] = CatsCompat.asyncFromFuture[F, GetVolumeFinished](Sync[F].delay(future))
 

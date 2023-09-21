@@ -24,18 +24,17 @@ class HaveATest4(catchFunc: SetMutedFinished => Unit) {
 
 class SetMutedService(implicit nodeRuntime: NodeRuntime, setVolumeFinished: SetVolCusFunction) {
 
-  def setMuted[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[SetMutedFinished] = {
-    val service = new SetMutedServiceImpl(implicitly, setMutedFunction = setVolumeFinished.setMutedAction)
-    Sync[F].delay(service.action(needMuted)).flatten
-  }
+  def setMuted[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[SetMutedFinished] =
+    new SetMutedServiceImpl(implicitly, setMutedFunction = setVolumeFinished.setMutedAction).action(needMuted)
 
 }
 
 class SetMutedServiceImpl(nodeRuntime: NodeRuntime, setMutedFunction: V8ValueFunction) {
 
-  def action[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[SetMutedFinished] = {
+  def promiseF[F[_]: Sync]: F[Promise[SetMutedFinished]] = Sync[F].delay(Promise[SetMutedFinished])
 
-    val promise                         = Promise[SetMutedFinished]
+  def action[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[SetMutedFinished] = promiseF.flatMap { promise =>
+
     val future                          = promise.future
     val finishedIO: F[SetMutedFinished] = CatsCompat.asyncFromFuture[F, SetMutedFinished](Sync[F].delay(future))
 
