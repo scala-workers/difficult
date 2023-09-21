@@ -23,7 +23,7 @@ class HaveATest5(catchFunc: GetMutedFinished => Unit) {
 
 class GetMutedService(implicit nodeRuntime: NodeRuntime, setVolumeFinished: SetVolCusFunction) {
 
-  def getMuted[F[_]: Async: CatsCompat.CompatContextShift](needMuted: Boolean): F[GetMutedFinished] =
+  def getMuted[F[_]: Async: CatsCompat.CompatContextShift]: F[GetMutedFinished] =
     new GetMutedServiceImpl(implicitly, getMutedFunction = setVolumeFinished.getVolumeAction).action
 
 }

@@ -40,7 +40,7 @@ class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]) {
 
 object V21AAA {
 
-  def resource[F[_]: Sync]: Resource[F, ToNodeRuntime] = {
+  def resource1[F[_]: Sync]: Resource[F, ToNodeRuntime] = {
     val instance = Sync[F].delay {
       val pool = new JavetEnginePool[NodeRuntime]
       pool.getConfig.setJSRuntimeType(JSRuntimeType.Node)

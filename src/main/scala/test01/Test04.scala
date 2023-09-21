@@ -5,11 +5,12 @@ import cats.*
 import cats.implicits.given
 import cats.effect.*
 import org.apache.pekko.Done
+import test01.node_runtime.LoudnessService
 import test01.service.SetVolumeService
 
 case class ListModel(l: List[Char])
 
-class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: SetVolumeService):
+class StreamDeal[F[_]: Async](stream: Stream[F, Char], setVolumeService: LoudnessService[F]):
 
   val foldStream: Stream[F, ListModel] = stream
     .mapAccumulate(ListModel(List.empty))((_, _).match

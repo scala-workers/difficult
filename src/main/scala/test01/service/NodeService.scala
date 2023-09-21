@@ -9,11 +9,12 @@ import org.apache.pekko.actor.typed.ActorSystem
 import sample.killrweather.fog.WeatherStation
 import test01.{GlobalKeyListenerExample, StreamDeal}
 import fs2.*
+import test01.node_runtime.LoudnessService
 import test01.service.SetVolumeService
 
 import scala.concurrent.Future
 
-class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl], setVolumeService: SetVolumeService):
+class ExecImpl(actorSys: ActorSystem[WeatherStation.Command], instance: Future[CatchKeybordImpl], setVolumeService: LoudnessService[IO]):
 
   val listener: GlobalKeyListenerExample = new GlobalKeyListenerExample(actorSys)
 
