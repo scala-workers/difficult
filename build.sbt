@@ -1,5 +1,7 @@
 scalaVersion := scalaV.v3
 
+crossScalaVersions := List(scalaV.v211, scalaV.v212, scalaV.v213, scalaV.v3)
+
 scalafmtOnCompile := true
 
 Compile / compile := ((Compile / compile) dependsOn (Compile / scalafmtSbt)).value
