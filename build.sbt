@@ -1,4 +1,4 @@
-scalaVersion := scalaV.v3
+scalaVersion := scalaV.v211
 
 crossScalaVersions := List(scalaV.v211, scalaV.v212, scalaV.v213, scalaV.v3)
 
@@ -17,7 +17,7 @@ libraryDependencies ++= libScalax.`better-monadic-for`.value
 
 val setVol = project in file("modules") / "setVol"
 
-val main = project in file(".") dependsOn setVol
+val difficult = project in file(".") dependsOn setVol
 
 addCommandAlias("r1", "main/reStart")
 

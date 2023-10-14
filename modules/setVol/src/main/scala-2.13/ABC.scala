@@ -20,4 +20,6 @@ object CatsCompat {
 
   def asyncFromFuture[F[_], T](fa: F[Future[T]])(implicit F: Async[F]): F[T] = Async[F].fromFuture(fa)
 
+  def blocking[F[_]: Sync, A](thunk: => A): F[A] = Sync[F].blocking(thunk)
+
 }

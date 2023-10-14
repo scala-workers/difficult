@@ -8,8 +8,8 @@ import com.caoccao.javet.interop.NodeRuntime
 import com.caoccao.javet.interop.engine.{IJavetEnginePool, JavetEnginePool}
 import com.caoccao.javet.node.modules.NodeModuleModule
 import com.caoccao.javet.utils.JavetOSUtils
-
 import net.scalax.ScalaxDone
+import test01.service.CatsCompat
 
 import java.io.File
 
@@ -20,8 +20,10 @@ class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]) {
   private def inputModule[F[_]: Sync](rumTime: NodeRuntime): Resource[F, NodeModuleModule] =
     Resource.fromAutoCloseable(Sync[F].delay(rumTime.getNodeModule(classOf[NodeModuleModule])))
 
-  private def setModuleRootResource[F[_]: Sync](nodeModuleModule: NodeModuleModule): Resource[F, ScalaxDone] = {
-    val setterAction: F[ScalaxDone] = Sync[F].delay {
+  private def setModuleRootResource[F[_]: Sync: CatsCompat.CompatContextShift](
+    nodeModuleModule: NodeModuleModule
+  ): Resource[F, ScalaxDone] = {
+    val setterAction: F[ScalaxDone] = CatsCompat.blocking[F, ScalaxDone] {
       val workingDirectory: File = new File(new File(JavetOSUtils.WORKING_DIRECTORY, "nodeTemp"), "node_modules")
       nodeModuleModule.setRequireRootDirectory(workingDirectory)
       ScalaxDone
@@ -30,7 +32,7 @@ class ToNodeRuntime(pool: IJavetEnginePool[NodeRuntime]) {
     liftK(setterAction)
   }
 
-  def resource[F[_]: Sync]: Resource[F, NodeRuntime] = for {
+  def resource[F[_]: Sync: CatsCompat.CompatContextShift]: Resource[F, NodeRuntime] = for {
     runtimeInstance                    <- resourceImpl
     nodeModuleModule: NodeModuleModule <- inputModule(runtimeInstance)
     scalaxDone: ScalaxDone             <- setModuleRootResource(nodeModuleModule)
